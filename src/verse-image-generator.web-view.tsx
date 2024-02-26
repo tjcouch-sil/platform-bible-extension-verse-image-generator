@@ -25,9 +25,11 @@ function stripUSFM(usfm: string) {
     .trim();
 }
 
+/** Stable default ScriptureReference */
 const defaultScrRef: ScriptureReference = { bookNum: 1, chapterNum: 1, verseNum: 1 };
 
 global.webViewComponent = function VerseImageGenerator({ useWebViewState }: WebViewProps) {
+  // Get the first project id we can find
   const [projectId] = usePromise(
     useCallback(async () => {
       const metadata = await papi.projectLookup.getMetadataForAllProjects();
@@ -39,22 +41,25 @@ global.webViewComponent = function VerseImageGenerator({ useWebViewState }: WebV
     undefined,
   );
 
+  // Get current verse reference
   const [scrRef] = useSetting('platform.verseRef', defaultScrRef);
+  // Transform ScriptureReference to VerseRef for project data
   const verseRef = useMemo(
     () => new VerseRef(scrRef.bookNum, scrRef.chapterNum, scrRef.verseNum, undefined),
     [scrRef],
   );
 
+  // Get the current verse from the project
   const [verse] = useProjectData('ParatextStandard', projectId).VerseUSFM(verseRef, '');
 
   const [prompt, setPrompt] = useWebViewState('prompt', '');
+  const [images, setImages] = useWebViewState<string[]>('images', []);
+  const [isLoading, setIsLoading] = useState(false);
 
+  // When the current verse changes, update the prompt
   useEffect(() => {
     if (verse) setPrompt(stripUSFM(verse));
   }, [verse, setPrompt]);
-
-  const [images, setImages] = useWebViewState<string[]>('images', []);
-  const [isLoading, setIsLoading] = useState(false);
 
   const requestImages = useCallback(async () => {
     setIsLoading(true);
@@ -66,6 +71,10 @@ global.webViewComponent = function VerseImageGenerator({ useWebViewState }: WebV
   return (
     <div className="top">
       <div>Please enter a prompt for which to generate an image:</div>
+      <div className="disclaimer">
+        [WARNING: We do not control the image generation server. It may produce inaccurate or
+        unexpected results.]
+      </div>
       <div>
         <textarea className="prompt" value={prompt} onChange={(e) => setPrompt(e.target.value)} />
       </div>

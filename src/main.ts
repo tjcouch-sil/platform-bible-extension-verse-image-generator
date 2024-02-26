@@ -4,7 +4,50 @@ import { deserialize, serialize } from 'platform-bible-utils';
 import webViewContent from './verse-image-generator.web-view?inline';
 import webViewContentStyle from './verse-image-generator.web-view.scss?inline';
 
+/**
+ * Get generated images from a server
+ *
+ * @param mirror Determines which server to use in case one is having issues
+ * @param prompt Prompt to use to generate the image
+ * @returns Array of image uris
+ */
 async function getImageUrls(mirror: number, prompt: string): Promise<string[]> {
+  if (mirror === 2) {
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+    const responsesRaw = await Promise.all(
+      Array.from(new Array(3)).map(() =>
+        fetch('https://api.svg.io:10003/api/createimg/ai', {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json',
+            'Accept-Encoding': 'gzip, deflate, br',
+            Connection: 'keep-alive',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            prompt: prompt.replace(/\r?\n/g, '').replace(/[^\w ]/g, ''),
+          }),
+        }),
+      ),
+    );
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '1';
+    logger.info(`responsesRaw: ${JSON.stringify(responsesRaw)}`);
+    try {
+      const responses: { images: string[] }[] = (
+        await Promise.all(responsesRaw.map((responseRaw) => responseRaw.text()))
+      ).map((response) => JSON.parse(response));
+      logger.info(`responses: ${JSON.stringify(responsesRaw)}`);
+      const imageUrls = responses.flatMap((response) =>
+        response.images.map((image) => `data:image/png;base64,${image}`),
+      );
+      logger.info(`SVG.IO URLs: ${imageUrls}`);
+      return imageUrls;
+    } catch (e) {
+      const message = `Error parsing svg.io image response into JSON: ${e}`;
+      logger.error(message);
+      throw new Error(message);
+    }
+  }
   if (mirror === 1) {
     const responseRaw = await fetch('https://api.craiyon.com/v3', {
       method: 'POST',
@@ -76,6 +119,11 @@ export async function activate(context: ExecutionActivationContext) {
   // Set up a map of cached urls for each prompt
   const imageUrlsMap: Record<string, string[] | undefined> = {};
 
+  /**
+   * Save the image urls to extension storage so they persist between sessions
+   *
+   * @param prompt Prompt associated with current save (for error reporting only)
+   */
   async function saveImageUrls(prompt: string) {
     try {
       await papi.storage.writeUserData(
@@ -99,7 +147,7 @@ export async function activate(context: ExecutionActivationContext) {
 
       // Get array of image urls
       logger.log(`Requesting generated images for prompt ${prompt}`);
-      const imageUrls = await getImageUrls(1, prompt);
+      const imageUrls = await getImageUrls(0, prompt);
       imageUrlsMap[prompt] = imageUrls;
 
       // Save the image urls but do not await so we just send them to the frontend
@@ -121,6 +169,7 @@ export async function activate(context: ExecutionActivationContext) {
     logger.warn(`Could not load image url cache. ${e}`);
   }
 
+  // Set up registered extension features to be unregistered when deactivating the extension
   context.registrations.add(await webViewPromise, await generateImagesPromise);
 }
 
