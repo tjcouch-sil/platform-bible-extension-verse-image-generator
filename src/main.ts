@@ -31,16 +31,13 @@ async function getImageUrls(mirror: number, prompt: string): Promise<string[]> {
       ),
     );
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '1';
-    logger.info(`responsesRaw: ${JSON.stringify(responsesRaw)}`);
     try {
       const responses: { images: string[] }[] = (
         await Promise.all(responsesRaw.map((responseRaw) => responseRaw.text()))
       ).map((response) => JSON.parse(response));
-      logger.info(`responses: ${JSON.stringify(responsesRaw)}`);
       const imageUrls = responses.flatMap((response) =>
         response.images.map((image) => `data:image/png;base64,${image}`),
       );
-      logger.info(`SVG.IO URLs: ${imageUrls}`);
       return imageUrls;
     } catch (e) {
       const message = `Error parsing svg.io image response into JSON: ${e}`;
