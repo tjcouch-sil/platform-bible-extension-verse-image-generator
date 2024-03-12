@@ -83,7 +83,7 @@ global.webViewComponent = function VerseImageGenerator({ useWebViewState }: WebV
       </div>
       {isLoading && <div>Loading images!</div>}
       <div className="img-grid">
-        {images.map((image) => (
+        {images?.map((image) => (
           <div className="gen-img-container" key={image}>
             <img className="gen-img" src={image} alt={image} />
           </div>

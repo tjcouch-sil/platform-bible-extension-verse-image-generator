@@ -1,6 +1,6 @@
 import papi, { logger } from '@papi/backend';
 import { ExecutionActivationContext, IWebViewProvider } from '@papi/core';
-import { deserialize, serialize } from 'platform-bible-utils';
+import { deserialize, isString, serialize } from 'platform-bible-utils';
 import webViewContent from './verse-image-generator.web-view?inline';
 import webViewContentStyle from './verse-image-generator.web-view.scss?inline';
 
@@ -12,41 +12,72 @@ import webViewContentStyle from './verse-image-generator.web-view.scss?inline';
  * @returns Array of image uris
  */
 async function getImageUrls(mirror: number, prompt: string): Promise<string[]> {
-  if (mirror === 2) {
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-    const responsesRaw = await Promise.all(
-      Array.from(new Array(3)).map(() =>
-        fetch('https://api.svg.io:10003/api/createimg/ai', {
-          method: 'POST',
-          headers: {
-            Accept: 'application/json',
-            'Accept-Encoding': 'gzip, deflate, br',
-            Connection: 'keep-alive',
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            prompt: prompt.replace(/\r?\n/g, '').replace(/[^\w ]/g, ''),
+  let imageUrls: string[] | undefined;
+
+  try {
+    if (mirror === 2) {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      const responsesRaw = await Promise.all(
+        Array.from(new Array(3)).map(() =>
+          fetch('https://api.svg.io:10003/api/createimg/ai', {
+            method: 'POST',
+            headers: {
+              Accept: 'application/json',
+              'Accept-Encoding': 'gzip, deflate, br',
+              Connection: 'keep-alive',
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              prompt: prompt.replace(/\r?\n/g, '').replace(/[^\w ]/g, ''),
+            }),
           }),
-        }),
-      ),
-    );
-    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '1';
-    try {
-      const responses: { images: string[] }[] = (
-        await Promise.all(responsesRaw.map((responseRaw) => responseRaw.text()))
-      ).map((response) => JSON.parse(response));
-      const imageUrls = responses.flatMap((response) =>
-        response.images.map((image) => `data:image/png;base64,${image}`),
+        ),
       );
-      return imageUrls;
-    } catch (e) {
-      const message = `Error parsing svg.io image response into JSON: ${e}`;
-      logger.error(message);
-      throw new Error(message);
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '1';
+      try {
+        const responses: { images: string[] }[] = (
+          await Promise.all(responsesRaw.map((responseRaw) => responseRaw.text()))
+        ).map((response) => JSON.parse(response));
+        imageUrls = responses.flatMap((response) =>
+          response.images.map((image) => `data:image/png;base64,${image}`),
+        );
+      } catch (e) {
+        const message = `Error parsing svg.io image response into JSON: ${e}`;
+        logger.error(message);
+        throw new Error(message);
+      }
     }
-  }
-  if (mirror === 1) {
-    const responseRaw = await fetch('https://api.craiyon.com/v3', {
+    if (mirror === 1) {
+      const responseRaw = await fetch('https://api.craiyon.com/v3', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Accept-Encoding': 'gzip, deflate, br',
+          Connection: 'keep-alive',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt,
+          version: 'c4ue22fb7kb6wlac',
+          // Using an external api
+          // eslint-disable-next-line no-null/no-null
+          token: null,
+          model: 'art',
+          negative_prompt: '',
+        }),
+      });
+      try {
+        const response: { images: string[] } = await responseRaw.json();
+        imageUrls = response.images.map((image) => `https://img.craiyon.com/${image}`);
+      } catch (e) {
+        const message = `Error parsing craiyon image response into JSON: ${e}`;
+        logger.error(message);
+        throw new Error(message);
+      }
+    }
+
+    // Mirror 0 (default)
+    const responseRaw = await fetch('https://chat-gpt.pictures/api/generateImage', {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -54,39 +85,18 @@ async function getImageUrls(mirror: number, prompt: string): Promise<string[]> {
         Connection: 'keep-alive',
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        prompt,
-        version: 'c4ue22fb7kb6wlac',
-        // Using an external api
-        // eslint-disable-next-line no-null/no-null
-        token: null,
-        model: 'art',
-        negative_prompt: '',
-      }),
+      body: JSON.stringify({ captionInput: prompt, captionModel: 'default' }),
     });
-    try {
-      const response: { images: string[] } = await responseRaw.json();
-      return response.images.map((image) => `https://img.craiyon.com/${image}`);
-    } catch (e) {
-      const message = `Error parsing craiyon image response into JSON: ${e}`;
-      logger.error(message);
-      throw new Error(message);
-    }
+    const response: { imgs: string[] } = await responseRaw.json();
+    imageUrls = response.imgs;
+  } catch (e) {
+    logger.error(`Error while retrieving image urls: ${e}`);
   }
 
-  // Mirror 0 (default)
-  const responseRaw = await fetch('https://chat-gpt.pictures/api/generateImage', {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Accept-Encoding': 'gzip, deflate, br',
-      Connection: 'keep-alive',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ captionInput: prompt, captionModel: 'default' }),
-  });
-  const response: { imgs: string[] } = await responseRaw.json();
-  return response.imgs;
+  if (!imageUrls || !Array.isArray(imageUrls) || !imageUrls.every((url) => isString(url)))
+    imageUrls = [];
+
+  return imageUrls;
 }
 
 // Provider for the verse image generator webview
@@ -145,7 +155,8 @@ export async function activate(context: ExecutionActivationContext) {
       // Get array of image urls
       logger.log(`Requesting generated images for prompt ${prompt}`);
       const imageUrls = await getImageUrls(0, prompt);
-      imageUrlsMap[prompt] = imageUrls;
+
+      if (imageUrls.length > 0) imageUrlsMap[prompt] = imageUrls;
 
       // Save the image urls but do not await so we just send them to the frontend
       saveImageUrls(prompt);
