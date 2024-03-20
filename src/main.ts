@@ -1,8 +1,9 @@
 import papi, { logger } from '@papi/backend';
-import { ExecutionActivationContext, IWebViewProvider } from '@papi/core';
+import { ExecutionActivationContext, GetWebViewOptions, IWebViewProvider } from '@papi/core';
 import { deserialize, isString, serialize } from 'platform-bible-utils';
 import webViewContent from './verse-image-generator.web-view?inline';
 import webViewContentStyle from './verse-image-generator.web-view.scss?inline';
+import { getWebViewTitle } from './utils/utils';
 
 /**
  * Get generated images from a server
@@ -46,8 +47,7 @@ async function getImageUrls(mirror: number, prompt: string): Promise<string[]> {
         logger.error(message);
         throw new Error(message);
       }
-    }
-    if (mirror === 1) {
+    } else if (mirror === 1) {
       const responseRaw = await fetch('https://api.craiyon.com/v3', {
         method: 'POST',
         headers: {
@@ -74,21 +74,21 @@ async function getImageUrls(mirror: number, prompt: string): Promise<string[]> {
         logger.error(message);
         throw new Error(message);
       }
+    } else {
+      // Mirror 0 (default)
+      const responseRaw = await fetch('https://chat-gpt.pictures/api/generateImage', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Accept-Encoding': 'gzip, deflate, br',
+          Connection: 'keep-alive',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ captionInput: prompt, captionModel: 'default' }),
+      });
+      const response: { imgs: string[] } = await responseRaw.json();
+      imageUrls = response.imgs;
     }
-
-    // Mirror 0 (default)
-    const responseRaw = await fetch('https://chat-gpt.pictures/api/generateImage', {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Accept-Encoding': 'gzip, deflate, br',
-        Connection: 'keep-alive',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ captionInput: prompt, captionModel: 'default' }),
-    });
-    const response: { imgs: string[] } = await responseRaw.json();
-    imageUrls = response.imgs;
   } catch (e) {
     logger.error(`Error while retrieving image urls: ${e}`);
   }
@@ -101,12 +101,25 @@ async function getImageUrls(mirror: number, prompt: string): Promise<string[]> {
 
 // Provider for the verse image generator webview
 const webViewProvider: IWebViewProvider = {
-  async getWebView(savedWebView) {
+  async getWebView(
+    savedWebView,
+    getWebViewOptions: GetWebViewOptions & { projectId: string | undefined },
+  ) {
+    // Type asserting because TypeScript knows nothing about the webview state
+    // eslint-disable-next-line no-type-assertion/no-type-assertion
+    const projectId = getWebViewOptions.projectId ?? (savedWebView.state?.projectId as string);
+    const projectsMetadata = projectId
+      ? await papi.projectLookup.getMetadataForProject(projectId)
+      : undefined;
     return {
+      title: getWebViewTitle(projectsMetadata?.name),
       ...savedWebView,
       content: webViewContent,
       styles: webViewContentStyle,
-      title: 'Verse Image Generator',
+      state: {
+        ...savedWebView.state,
+        projectId,
+      },
     };
   },
 };
@@ -120,8 +133,20 @@ export async function activate(context: ExecutionActivationContext) {
   // Register the web view provider
   const webViewPromise = papi.webViewProviders.register(webViewProviderType, webViewProvider);
 
-  // Pull up the web view on startup
-  papi.webViews.getWebView(webViewProviderType, undefined, { existingId: '?' });
+  // Pull up the web view
+  const openPromise = papi.commands.registerCommand(
+    'verseImageGenerator.open',
+    async (projectId) => {
+      const finalProjectId =
+        projectId ??
+        (await papi.dialogs.selectProject({ includeProjectTypes: 'ParatextStandard' }));
+      // Add option as supported by the web view provider
+      // eslint-disable-next-line no-type-assertion/no-type-assertion
+      return papi.webViews.getWebView(webViewProviderType, undefined, {
+        projectId: finalProjectId,
+      } as GetWebViewOptions);
+    },
+  );
 
   // Set up a map of cached urls for each prompt
   const imageUrlsMap: Record<string, string[] | undefined> = {};
@@ -146,15 +171,15 @@ export async function activate(context: ExecutionActivationContext) {
   // Register command to generate images for a prompt
   const generateImagesPromise = papi.commands.registerCommand(
     'verseImageGenerator.generateImages',
-    async (prompt) => {
+    async (prompt, mirror = 0) => {
       if (!prompt) throw new Error('Must provide a prompt!');
 
       const cachedImageUrls = imageUrlsMap[prompt];
       if (cachedImageUrls) return cachedImageUrls;
 
       // Get array of image urls
-      logger.log(`Requesting generated images for prompt ${prompt}`);
-      const imageUrls = await getImageUrls(0, prompt);
+      logger.log(`Requesting generated images from mirror ${mirror} for prompt ${prompt}`);
+      const imageUrls = await getImageUrls(mirror, prompt);
 
       if (imageUrls.length > 0) imageUrlsMap[prompt] = imageUrls;
 
@@ -178,7 +203,7 @@ export async function activate(context: ExecutionActivationContext) {
   }
 
   // Set up registered extension features to be unregistered when deactivating the extension
-  context.registrations.add(await webViewPromise, await generateImagesPromise);
+  context.registrations.add(await webViewPromise, await generateImagesPromise, await openPromise);
 }
 
 export async function deactivate() {

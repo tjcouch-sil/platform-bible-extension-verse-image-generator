@@ -2,7 +2,15 @@
   "mainMenu": {
     "columns": {},
     "groups": {},
-    "items": []
+    "items": [
+      {
+        "label": "%mainMenu_openVerseImageGenerator%",
+        "localizeNotes": "Application main menu > Project > Open Verse Image Generator",
+        "group": "platform.projectResources",
+        "order": -99,
+        "command": "verseImageGenerator.open"
+      }
+    ]
   },
   "defaultWebViewTopMenu": {
     "columns": {},

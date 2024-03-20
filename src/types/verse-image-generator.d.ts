@@ -9,8 +9,16 @@ declare module 'papi-shared-types' {
      * Generate images and return urls for them
      *
      * @param prompt Prompt for generating images
+     * @param mirror Which server to use
      * @returns Array of urls for the generated images
      */
-    'verseImageGenerator.generateImages': (prompt: string) => Promise<string[]>;
+    'verseImageGenerator.generateImages': (prompt: string, mirror?: number) => Promise<string[]>;
+    /**
+     * Opens a verse image generator web view at the specified project id
+     *
+     * @param projectId
+     * @returns Web view id for web view opened
+     */
+    'verseImageGenerator.open': (projectId?: string) => Promise<string | undefined>;
   }
 }
