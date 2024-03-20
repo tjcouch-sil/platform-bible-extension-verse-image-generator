@@ -1,6 +1,6 @@
 {
   "name": "verse-image-generator",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Platform.Bible Extension - Generates images based on current verse or other prompt. For OCE Learnathon Spring 24",
   "author": "TJ Couch",
   "license": "MIT",
