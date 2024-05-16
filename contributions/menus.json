@@ -7,7 +7,7 @@
         "label": "%mainMenu_openVerseImageGenerator%",
         "localizeNotes": "Application main menu > Project > Open Verse Image Generator",
         "group": "platform.projectResources",
-        "order": -99,
+        "order": -94,
         "command": "verseImageGenerator.open"
       }
     ]
