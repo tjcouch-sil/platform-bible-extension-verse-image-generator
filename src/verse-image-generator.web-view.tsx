@@ -36,6 +36,8 @@ const mirrorOptions = ['ChatGPT Images', 'Craiyon', 'SVG Icon'];
 const defaultScrRef: ScriptureReference = { bookNum: 1, chapterNum: 1, verseNum: 1 };
 
 global.webViewComponent = function VerseImageGenerator({
+  projectId,
+  title,
   useWebViewState,
   updateWebViewDefinition,
 }: WebViewProps) {
@@ -51,20 +53,15 @@ global.webViewComponent = function VerseImageGenerator({
     undefined,
   );
 
-  const [projectId, setProjectIdInternal] = useWebViewState<string | undefined>(
-    'projectId',
-    undefined,
-  );
   const setProjectId = useCallback(
     (pId: string) => {
-      setProjectIdInternal(pId);
       const projectName = projects?.find((project) => project.id === pId)?.name;
-      if (projectName)
-        updateWebViewDefinition({
-          title: getWebViewTitle(projectName),
-        });
+      updateWebViewDefinition({
+        title: projectName ? getWebViewTitle(projectName) : title,
+        projectId: pId,
+      });
     },
-    [setProjectIdInternal, updateWebViewDefinition, projects],
+    [updateWebViewDefinition, projects, title],
   );
 
   // Get current verse reference

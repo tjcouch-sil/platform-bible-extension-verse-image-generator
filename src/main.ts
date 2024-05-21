@@ -105,9 +105,7 @@ const webViewProvider: IWebViewProvider = {
     savedWebView,
     getWebViewOptions: GetWebViewOptions & { projectId: string | undefined },
   ) {
-    // Type asserting because TypeScript knows nothing about the webview state
-    // eslint-disable-next-line no-type-assertion/no-type-assertion
-    const projectId = getWebViewOptions.projectId ?? (savedWebView.state?.projectId as string);
+    const projectId = getWebViewOptions.projectId ?? savedWebView.projectId;
     const projectsMetadata = projectId
       ? await papi.projectLookup.getMetadataForProject(projectId)
       : undefined;
@@ -116,10 +114,7 @@ const webViewProvider: IWebViewProvider = {
       ...savedWebView,
       content: webViewContent,
       styles: webViewContentStyle,
-      state: {
-        ...savedWebView.state,
-        projectId,
-      },
+      projectId,
     };
   },
 };
