@@ -106,11 +106,13 @@ const webViewProvider: IWebViewProvider = {
     getWebViewOptions: GetWebViewOptions & { projectId: string | undefined },
   ) {
     const projectId = getWebViewOptions.projectId ?? savedWebView.projectId;
-    const projectsMetadata = projectId
-      ? await papi.projectLookup.getMetadataForProject(projectId)
+    const projectName = projectId
+      ? (await (
+          await papi.projectDataProviders.get('platform.base', projectId)
+        ).getSetting('platform.name')) ?? projectId
       : undefined;
     return {
-      title: getWebViewTitle(projectsMetadata?.name),
+      title: getWebViewTitle(projectName),
       ...savedWebView,
       content: webViewContent,
       styles: webViewContentStyle,
@@ -134,7 +136,9 @@ export async function activate(context: ExecutionActivationContext) {
     async (projectId) => {
       const finalProjectId =
         projectId ??
-        (await papi.dialogs.selectProject({ includeProjectTypes: 'ParatextStandard' }));
+        (await papi.dialogs.selectProject({
+          includeProjectInterfaces: 'platformScripture.USFM_BookChapterVerse',
+        }));
       // Add option as supported by the web view provider
       // eslint-disable-next-line no-type-assertion/no-type-assertion
       return papi.webViews.getWebView(webViewProviderType, undefined, {
