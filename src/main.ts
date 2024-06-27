@@ -137,7 +137,7 @@ export async function activate(context: ExecutionActivationContext) {
       const finalProjectId =
         projectId ??
         (await papi.dialogs.selectProject({
-          includeProjectInterfaces: 'platformScripture.USFM_BookChapterVerse',
+          includeProjectInterfaces: 'platformScripture.USFM_Verse',
         }));
       // Add option as supported by the web view provider
       // eslint-disable-next-line no-type-assertion/no-type-assertion

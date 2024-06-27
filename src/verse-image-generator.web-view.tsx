@@ -44,7 +44,7 @@ global.webViewComponent = function VerseImageGenerator({
   const [projects] = usePromise(
     useCallback(async () => {
       const projectsMetadata = await papi.projectLookup.getMetadataForAllProjects({
-        includeProjectInterfaces: 'platformScripture.USFM_BookChapterVerse',
+        includeProjectInterfaces: 'platformScripture.USFM_Verse',
       });
 
       // Get project names
@@ -82,10 +82,7 @@ global.webViewComponent = function VerseImageGenerator({
   );
 
   // Get the current verse from the project
-  const [verse] = useProjectData('platformScripture.USFM_BookChapterVerse', projectId).VerseUSFM(
-    verseRef,
-    '',
-  );
+  const [verse] = useProjectData('platformScripture.USFM_Verse', projectId).VerseUSFM(verseRef, '');
 
   const [prompt, setPrompt] = useWebViewState('prompt', '');
   const [images, setImages] = useWebViewState<string[]>('images', []);
