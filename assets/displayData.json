@@ -1,0 +1,12 @@
+{
+  "icon": "",
+  "moreInfoUrl": "",
+  "supportUrl": "",
+  "localizedDisplayInfo": {
+    "en": {
+      "displayName": "Paranext Extension Template",
+      "shortSummary": "Generates images based on current verse or other prompt. For OCE Learnathon Spring 24",
+      "description": "assets/descriptions/description-en.md"
+    }
+  }
+}
