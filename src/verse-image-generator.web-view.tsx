@@ -1,8 +1,8 @@
 import { WebViewProps } from '@papi/core';
 import papi from '@papi/frontend';
-import { useProjectData, useSetting } from '@papi/frontend/react';
+import { useProjectData } from '@papi/frontend/react';
 import { VerseRef } from '@sillsdev/scripture';
-import { Button, ScriptureReference, usePromise } from 'platform-bible-react';
+import { Button, usePromise } from 'platform-bible-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getWebViewTitle } from './utils/utils';
 
@@ -32,14 +32,12 @@ function stripUSFM(usfm: string) {
 
 const mirrorOptions = ['ChatGPT Images', 'Craiyon', 'SVG Icon'];
 
-/** Stable default ScriptureReference */
-const defaultScrRef: ScriptureReference = { bookNum: 1, chapterNum: 1, verseNum: 1 };
-
 global.webViewComponent = function VerseImageGenerator({
   projectId,
   title,
   useWebViewState,
   updateWebViewDefinition,
+  useWebViewScrollGroupScrRef,
 }: WebViewProps) {
   const [projects] = usePromise(
     useCallback(async () => {
@@ -74,7 +72,7 @@ global.webViewComponent = function VerseImageGenerator({
   );
 
   // Get current verse reference
-  const [scrRef] = useSetting('platform.verseRef', defaultScrRef);
+  const [scrRef] = useWebViewScrollGroupScrRef();
   // Transform ScriptureReference to VerseRef for project data
   const verseRef = useMemo(
     () => new VerseRef(scrRef.bookNum, scrRef.chapterNum, scrRef.verseNum, undefined),
