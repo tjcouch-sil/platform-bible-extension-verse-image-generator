@@ -1,30 +1,6 @@
-.top > div {
-  margin-bottom: 1em;
-}
+@import './tailwind.scss';
 
-.disclaimer {
-  font-style: italic;
-  color: gray;
-}
-
-.prompt {
-  width: 100%;
-  height: 5em;
-}
-
-.img-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-
-.gen-img-container {
-  flex-grow: 1;
-  flex-shrink: 0;
-  flex-basis: 75px;
-}
-
-.gen-img {
-  max-height: 100%;
-  max-width: 100%;
+// This is here becuase tw-basis-19 doesn't seem to work. It is equivalent
+.tw-basis-19 {
+  flex-basis: 76px;
 }

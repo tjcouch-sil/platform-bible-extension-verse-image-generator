@@ -2,7 +2,15 @@ import { WebViewProps } from '@papi/core';
 import papi from '@papi/frontend';
 import { useProjectData } from '@papi/frontend/react';
 import { VerseRef } from '@sillsdev/scripture';
-import { Button, usePromise } from 'platform-bible-react';
+import {
+  Button,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  usePromise,
+} from 'platform-bible-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getWebViewTitle } from './utils/utils';
 
@@ -91,7 +99,7 @@ global.webViewComponent = function VerseImageGenerator({
     if (verse) setPrompt(stripUSFM(verse));
   }, [verse, setPrompt]);
 
-  const [mirror, setMirror] = useWebViewState('mirror', 0);
+  const [mirror, setMirror] = useWebViewState('mirror', 1);
 
   const requestImages = useCallback(async () => {
     setIsLoading(true);
@@ -105,49 +113,63 @@ global.webViewComponent = function VerseImageGenerator({
   }, [prompt, setImages, mirror]);
 
   return (
-    <div className="top">
+    <div className="[&>div]:tw-mb-2 tw-m-2">
       <div>
         Selected Scripture Project:{' '}
-        <select value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-          {projects?.map((project) => (
-            <option key={project.id} value={project.id}>
-              {project.name}
-            </option>
-          ))}
-        </select>
+        <Select value={projectId} onValueChange={(pId) => setProjectId(pId)}>
+          <SelectTrigger className="tw-w-auto tw-inline-flex">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {projects?.map((project) => (
+              <SelectItem key={project.id} value={project.id}>
+                {project.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div>
         Selected Server Mirror:{' '}
-        <select
-          value={mirror}
-          onChange={(e) => {
-            setMirror(parseInt(e.target.value, 10));
+        <Select
+          value={`${mirror}`}
+          onValueChange={(selectedMirror) => {
+            setMirror(parseInt(selectedMirror, 10));
           }}
         >
-          {mirrorOptions?.map((mirrorOption, i) => (
-            <option key={mirrorOption} value={i}>
-              {mirrorOption}
-            </option>
-          ))}
-        </select>
+          <SelectTrigger className="tw-w-auto tw-inline-flex">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {mirrorOptions?.map((mirrorOption, i) => (
+              <SelectItem key={mirrorOption} value={`${i}`}>
+                {mirrorOption}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div>Please enter a prompt for which to generate an image:</div>
-      <div className="disclaimer">
+      <div className="tw-italic tw-text-muted-foreground">
         [WARNING: We do not control the image generation server. It may produce inaccurate or
         unexpected results.]
       </div>
       <div>
-        <textarea className="prompt" value={prompt} onChange={(e) => setPrompt(e.target.value)} />
+        <textarea
+          className="tw-w-full tw-h-20 tw-p-1 tw-outline tw-outline-1 tw-outline-foreground tw-bg-background"
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+        />
       </div>
       <div>
         <Button onClick={requestImages}>Generate Images</Button>
       </div>
       {isLoading && <div>Loading images!</div>}
-      <div className="img-grid">
+      <div className="tw-flex tw-flex-wrap tw-gap-1">
         {images?.map((image) => (
-          <div className="gen-img-container" key={image}>
+          <div className="tw-flex-grow tw-flex-shrink-0 tw-basis-19" key={image}>
             <button type="button" onClick={() => updateWebViewDefinition({ iconUrl: image })}>
-              <img className="gen-img" src={image} alt={image} />
+              <img className="tw-max-h-full tw-max-w-full" src={image} alt={image} />
             </button>
           </div>
         ))}
