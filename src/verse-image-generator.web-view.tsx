@@ -1,7 +1,6 @@
 import { WebViewProps } from '@papi/core';
 import papi from '@papi/frontend';
 import { useProjectData } from '@papi/frontend/react';
-import { VerseRef } from '@sillsdev/scripture';
 import {
   Button,
   Select,
@@ -11,7 +10,7 @@ import {
   SelectValue,
   usePromise,
 } from 'platform-bible-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { getWebViewTitle } from './utils/utils';
 
 /**
@@ -80,12 +79,7 @@ global.webViewComponent = function VerseImageGenerator({
   );
 
   // Get current verse reference
-  const [scrRef] = useWebViewScrollGroupScrRef();
-  // Transform ScriptureReference to VerseRef for project data
-  const verseRef = useMemo(
-    () => new VerseRef(scrRef.bookNum, scrRef.chapterNum, scrRef.verseNum, undefined),
-    [scrRef],
-  );
+  const [verseRef] = useWebViewScrollGroupScrRef();
 
   // Get the current verse from the project
   const [verse] = useProjectData('platformScripture.USFM_Verse', projectId).VerseUSFM(verseRef, '');
