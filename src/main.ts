@@ -107,9 +107,9 @@ const webViewProvider: IWebViewProvider = {
   ) {
     const projectId = getWebViewOptions.projectId ?? savedWebView.projectId;
     const projectName = projectId
-      ? (await (
+      ? ((await (
           await papi.projectDataProviders.get('platform.base', projectId)
-        ).getSetting('platform.name')) ?? projectId
+        ).getSetting('platform.name')) ?? projectId)
       : undefined;
     return {
       title: getWebViewTitle(projectName),

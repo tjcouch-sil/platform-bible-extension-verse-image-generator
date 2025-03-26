@@ -1,6 +1,7 @@
 {
-  "name": "verse-image-generator",
+  "name": "verseImageGenerator",
   "version": "0.1.0",
+  "publisher": "TJ Couch",
   "displayData": "assets/displayData.json",
   "author": "TJ Couch",
   "license": "MIT",
