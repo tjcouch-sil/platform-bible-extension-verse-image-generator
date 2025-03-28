@@ -113,6 +113,7 @@ const webViewProvider: IWebViewProvider = {
       : undefined;
     return {
       title: getWebViewTitle(projectName),
+      shouldShowToolbar: true,
       ...savedWebView,
       content: webViewContent,
       styles: webViewContentStyle,
