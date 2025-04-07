@@ -145,6 +145,56 @@ To package this extension into a zip file for distribution:
 
 `npm run package`
 
+## Publishing
+
+1. Make sure the versions in this repo are on the version number you want to release. If they are not, run the `bump-versions` script and merge the `bump-versions-<version>` branch. For example, to bump to version 0.2.0, run the following and then merge the `bump-versions-0.2.0` branch:
+
+   ```bash
+   npm run bump-versions 0.2.0
+   ```
+
+2. Manually dispatch the Publish workflow in GitHub Actions to create a new pre-release and bump versions branch. It has the following inputs:
+
+   - `version`: enter the version you intend to publish (e.g. 0.2.0)
+   - `allowUpdate`: check to allow uploading new release files to an existing GitHub release
+   - `bumpVersion`: enter the version you want to bump to after releasing (e.g. 0.3.0-alpha.0). Leave blank if you don't want to bump
+   - `bumpRef`: enter the Git ref you want to create the bump versions branch from. Leave blank if you want to use the branch selected for the workflow run.
+
+    <details>
+        <summary>[Optional] Create a new pre-release and bump versions branch manually </summary>
+
+   #### Manually create a new pre-release and bump versions branch
+
+   Alternatively, you can create a new pre-release manually:
+
+   ```bash
+   npm run package
+   # Create a new pre-release in GitHub on tag `v<version>`
+   # Copy `.github/assets/release-body.md` into the GitHub branch
+   # Generate changelog
+   # Attach contents of `release` folder
+   ```
+
+   Then bump versions by running the following:
+
+   ```bash
+   npm run bump-versions <version>
+   ```
+
+   Or bump versions manually:
+
+   ```bash
+   git checkout -b bump-versions-<version>
+   npm version <version> --git-tag-version false
+   # Change version in the extension's `manifest.json`
+   git commit -a -m "Bumped versions to <version>"; git push -u origin HEAD
+   ```
+
+    </details>
+
+3. Publish the newly created draft release in GitHub.
+4. Merge the newly created `bump-versions-<version>` branch.
+
 ## To update this extension from the template
 
 This extension project is forked from [`paranext-extension-template`](https://github.com/paranext/paranext-extension-template), which is updated periodically and will sometimes receive updates that help with breaking changes on [`paranext-core`](https://github.com/paranext/paranext-core). We recommend you periodically update your extension by merging the latest template updates into your extension.
