@@ -44,6 +44,7 @@ jobs:
 
     steps:
       - name: Output Workflow Dispatch Inputs
+        working-directory: ./
         run: echo "${{ toJSON(github.event.inputs) }}"
 
       - name: Checkout git repo
