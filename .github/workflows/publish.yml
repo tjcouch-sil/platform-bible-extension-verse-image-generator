@@ -30,6 +30,10 @@ jobs:
 
     runs-on: ${{ matrix.os }}
 
+    defaults:
+      run:
+        working-directory: ./extension-repo
+
     permissions:
       contents: write
 
@@ -40,12 +44,20 @@ jobs:
     steps:
       - name: Checkout git repo
         uses: actions/checkout@v4
+        with:
+          path: extension-repo
+
+      - name: Checkout paranext-core repo to use its sub-packages
+        uses: actions/checkout@v4
+        with:
+          path: paranext-core
+          repository: paranext/paranext-core
 
       - name: Read package.json
         id: package_json
         uses: zoexx/github-action-json-file-properties@1.0.6
         with:
-          file_path: 'package.json'
+          file_path: 'extension-repo/package.json'
 
       - name: Verify version (skips if versions match)
         if: '${{ inputs.version != steps.package_json.outputs.version }}'
@@ -70,8 +82,8 @@ jobs:
           allowUpdates: ${{ inputs.allowUpdate }}
           artifactErrorsFailBuild: true
           artifacts: |
-            release/*
-          bodyFile: .github/assets/release-body.md
+            extension-repo/release/*
+          bodyFile: extension-repo/.github/assets/release-body.md
           # make the new release a draft instead of automatically publishing
           draft: true
           generateReleaseNotes: true
@@ -89,6 +101,7 @@ jobs:
         if: ${{ inputs.bumpVersion != '' && inputs.bumpRef != '' }}
         uses: actions/checkout@v4
         with:
+          path: extension-repo
           ref: ${{ inputs.bumpRef }}
 
       - name: Bump repo versions
