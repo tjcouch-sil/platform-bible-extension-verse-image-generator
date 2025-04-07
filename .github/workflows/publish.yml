@@ -69,12 +69,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           cache: npm
-          cache-dependency-path: extension-repo/package-lock.json
+          cache-dependency-path: |
+            extension-repo/package-lock.json
+            paranext-core/package-lock.json
           node-version: ${{ fromJson(steps.package_json.outputs.volta).node }}
 
-      - name: Install packages and build
+      - name: Install packages
         run: |
           npm ci
+          npm run package
+
+      - name: Install core packages
+        working-directory: paranext-core
+        run: |
+          npm ci
+
+      - name: Package for distribution
+        run: |
           npm run package
 
       - name: Publish draft release
