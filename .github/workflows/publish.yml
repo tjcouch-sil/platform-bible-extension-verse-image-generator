@@ -44,6 +44,7 @@ jobs:
 
     steps:
       - name: Output Workflow Dispatch Inputs
+        working-directory: ./
         run: echo "${{ toJSON(github.event.inputs) }}"
 
       - name: Checkout git repo
@@ -85,7 +86,7 @@ jobs:
       - name: Install core packages
         working-directory: paranext-core
         run: |
-          npm ci
+          npm ci --ignore-scripts
 
       - name: Package for distribution
         run: |
@@ -113,15 +114,18 @@ jobs:
           updateOnlyUnreleased: true
 
       - name: Checkout bump ref
-        if: ${{ inputs.bumpVersion != '' && inputs.bumpRef != '' }}
+        if: ${{ inputs.bumpVersion != '' && inputs.bumpRef != '' && inputs.bumpRef != (github.head_ref || github.ref_name) }}
         uses: actions/checkout@v4
         with:
+          clean: false
           path: extension-repo
           ref: ${{ inputs.bumpRef }}
 
       - name: Bump repo versions
         if: ${{ inputs.bumpVersion != '' }}
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           npm run bump-versions -- ${{ inputs.bumpVersion }}
 
       # Enable tmate debugging of manually-triggered workflows if the input option was provided
