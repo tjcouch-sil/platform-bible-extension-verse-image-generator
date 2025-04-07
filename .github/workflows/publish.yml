@@ -114,17 +114,18 @@ jobs:
           updateOnlyUnreleased: true
 
       - name: Checkout bump ref
-        if: ${{ inputs.bumpVersion != '' && inputs.bumpRef != '' }}
+        if: ${{ inputs.bumpVersion != '' && inputs.bumpRef != '' && inputs.bumpRef != (github.head_ref || github.ref_name) }}
         uses: actions/checkout@v4
         with:
+          clean: false
           path: extension-repo
           ref: ${{ inputs.bumpRef }}
 
       - name: Bump repo versions
-        working-directory: ./
         if: ${{ inputs.bumpVersion != '' }}
         run: |
-          cd extension-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           npm run bump-versions -- ${{ inputs.bumpVersion }}
 
       # Enable tmate debugging of manually-triggered workflows if the input option was provided
