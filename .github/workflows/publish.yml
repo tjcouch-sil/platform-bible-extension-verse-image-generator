@@ -68,8 +68,9 @@ jobs:
       - name: Install Node and NPM
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ fromJson(steps.package_json.outputs.volta).node }}
           cache: npm
+          cache-dependency-path: extension-repo/package-lock.json
+          node-version: ${{ fromJson(steps.package_json.outputs.volta).node }}
 
       - name: Install packages and build
         run: |
