@@ -86,7 +86,7 @@ jobs:
       - name: Install core packages
         working-directory: paranext-core
         run: |
-          npm ci
+          npm ci --ignore-scripts
 
       - name: Package for distribution
         run: |
@@ -121,8 +121,10 @@ jobs:
           ref: ${{ inputs.bumpRef }}
 
       - name: Bump repo versions
+        working-directory: ./
         if: ${{ inputs.bumpVersion != '' }}
         run: |
+          cd extension-repo
           npm run bump-versions -- ${{ inputs.bumpVersion }}
 
       # Enable tmate debugging of manually-triggered workflows if the input option was provided
