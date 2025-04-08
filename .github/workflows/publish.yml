@@ -7,13 +7,8 @@ on:
       version:
         description: 'Version to publish. For verification purposes only; if the package.json version is different on the specified branch, the workflow will fail.'
         required: true
-      allowUpdate:
-        type: boolean
-        description: 'Upload new release files to the release if it already exists. If false, will fail if the release already exists.'
-        required: false
-        default: false
-      bumpVersion:
-        description: "Version to bump all the repo's versions to on a new branch (called `bump-versions-<version>`) after making a new release. If empty, will not bump the versions."
+      newVersionAfterPublishing:
+        description: "Version to bump all the repo's versions to on a new branch (called `bump-versions-<version>`) after making a new release, e.g. 0.3.0-alpha.0. If empty, will not bump the versions."
         required: false
       bumpRef:
         description: 'Git ref to create the new `bump-versions-<version>` branch from. If empty, will use the current branch.'
@@ -95,7 +90,6 @@ jobs:
       - name: Publish draft release
         uses: ncipollo/release-action@v1
         with:
-          allowUpdates: ${{ inputs.allowUpdate }}
           artifactErrorsFailBuild: true
           artifacts: |
             extension-repo/release/*
@@ -114,7 +108,7 @@ jobs:
           updateOnlyUnreleased: true
 
       - name: Checkout bump ref
-        if: ${{ inputs.bumpVersion != '' && inputs.bumpRef != '' && inputs.bumpRef != (github.head_ref || github.ref_name) }}
+        if: ${{ inputs.newVersionAfterPublishing != '' && inputs.bumpRef != '' && inputs.bumpRef != (github.head_ref || github.ref_name) }}
         uses: actions/checkout@v4
         with:
           clean: false
@@ -122,11 +116,12 @@ jobs:
           ref: ${{ inputs.bumpRef }}
 
       - name: Bump repo versions
-        if: ${{ inputs.bumpVersion != '' }}
+        if: ${{ inputs.newVersionAfterPublishing != '' }}
+        # Bump versions using the built-in git token https://github.com/actions/checkout/tree/v4/?tab=readme-ov-file#push-a-commit-using-the-built-in-token
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          npm run bump-versions -- ${{ inputs.bumpVersion }}
+          npm run bump-versions -- ${{ inputs.newVersionAfterPublishing }}
 
       # Enable tmate debugging of manually-triggered workflows if the input option was provided
       - name: Setup tmate session
