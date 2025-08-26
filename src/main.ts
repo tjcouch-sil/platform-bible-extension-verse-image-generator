@@ -126,7 +126,7 @@ const webViewProviderType = 'verseImageGenerator.view';
 const imageUrlsDataKey = 'imageUrls';
 
 export async function activate(context: ExecutionActivationContext) {
-  logger.info('Verse Image Generator is activating!');
+  logger.debug('Verse Image Generator is activating!');
 
   // Register the web view provider
   const webViewPromise = papi.webViewProviders.register(webViewProviderType, webViewProvider);
@@ -207,6 +207,6 @@ export async function activate(context: ExecutionActivationContext) {
 }
 
 export async function deactivate() {
-  logger.info('Verse Image Generator is deactivating!');
+  logger.debug('Verse Image Generator is deactivating!');
   return true;
 }

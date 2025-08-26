@@ -11,15 +11,15 @@ const shouldGenerateSourceMaps = isDev || process.env.DEBUG_PROD;
 /** The base directory from which webpack should operate (should be the root repo folder) */
 export const rootDir = path.resolve(__dirname, '..');
 
-// Note: we do not want to do any chunking because neither webViews nor main can import dependencies
-// other than those listed in configBase.externals. Each webView must contain all its dependency
+// Note: we do not want to do any chunking because neither WebViews nor main can import dependencies
+// other than those listed in configBase.externals. Each WebView must contain all its dependency
 // code, and main must contain all its dependency code.
-/** Webpack configuration shared by webView building and main building */
+/** Webpack configuration shared by WebView building and main building */
 const configBase: webpack.Configuration = {
   // The operating directory for webpack instead of current working directory
   context: rootDir,
   mode: isDev ? 'development' : 'production',
-  // Bundle the sourcemap into the file since webviews are injected as strings into the main file
+  // Bundle the sourcemap into the file since WebViews are injected as strings into the main file
   devtool: shouldGenerateSourceMaps ? 'inline-source-map' : false,
   watchOptions: {
     ignored: ['**/node_modules'],
@@ -58,7 +58,9 @@ const configBase: webpack.Configuration = {
       // This must be the first rule in order to be applied after all other transformations
       // https://webpack.js.org/guides/asset-modules/#replacing-inline-loader-syntax
       {
-        resourceQuery: /inline/,
+        resourceQuery: {
+          and: [/inline/, { not: [/raw/] }],
+        },
         type: 'asset/source',
       },
       // Load TypeScript with SWC https://swc.rs/docs/usage/swc-loader
@@ -66,6 +68,7 @@ const configBase: webpack.Configuration = {
       // https://github.com/TypeStrong/ts-loader#options
       {
         test: /\.tsx?$/,
+        resourceQuery: { not: [/raw/] },
         use: {
           loader: 'swc-loader',
           options: {
@@ -88,6 +91,7 @@ const configBase: webpack.Configuration = {
       // https://webpack.js.org/loaders/sass-loader/#getting-started
       {
         test: /\.(sa|sc|c)ss$/,
+        resourceQuery: { not: [/raw/] },
         use: [
           // We are not using style-loader since we are passing styles to papi, not inserting them
           // into dom. style-loader would add html style elements for our styles if we used it
@@ -107,6 +111,7 @@ const configBase: webpack.Configuration = {
       // https://webpack.js.org/guides/asset-management/#loading-images
       {
         test: /\.(png|svg|jpg|jpeg|gif)$/i,
+        resourceQuery: { not: [/raw/] },
         type: 'asset/inline',
       },
       /**
@@ -117,6 +122,7 @@ const configBase: webpack.Configuration = {
       // https://webpack.js.org/guides/asset-management/#loading-fonts
       {
         test: /\.(woff|woff2|eot|ttf|otf)$/i,
+        resourceQuery: { not: [/raw/] },
         type: 'asset/inline',
       },
       /** Import files with no transformation as strings with "./file?raw" */
